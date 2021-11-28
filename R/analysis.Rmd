@@ -1,11 +1,45 @@
 ---
-title: "Analysis"
-author: "Murat Kezer"
-date: "11/23/2021"
-output: html_document
+title: "Data processing & Preliminary Analyses"
+output: 
+    html_document:
+      code_download: TRUE
+      toc: TRUE
+      toc_float:
+        collapsed: FALSE
+      toc_depth: 3
+      code_folding: hide
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      tidy = TRUE, 
+                      cache = TRUE, 
+                      warning = FALSE, 
+                      message = FALSE)
+```
+
+```{r}
+library(fs)
+library(here)
+library(rio)
+library(tidyverse)
+library(magrittr)
+library(knitr)
+library(kableExtra)
+
+library(caret)
+library(recipes)
+library(MLmetrics)
+library(cutpointr)
+library(ranger)
+library(doParallel)
+```
+
+
+# Import data
+```{r}
+df <- dir_ls(here("data"), glob = "*.xlsx") %>% 
+  map_dfr(., import, .id = "file") %>% 
+  mutate(file = str_extract(file, "1a|1b|1c"))
 ```
 
