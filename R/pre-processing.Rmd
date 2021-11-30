@@ -26,10 +26,12 @@ library(rio)
 library(tidyverse)
 library(magrittr)
 
+library(reticulate)
 library(quanteda)
 library(quanteda.textstats)
 library(quanteda.dictionaries)
 library(udpipe)
+library(text)
 ```
 
 
@@ -39,9 +41,6 @@ library(udpipe)
 df <- dir_ls(here("data"), glob = "*.xlsx") %>% 
   map_dfr(., import, .id = "file") %>% 
   mutate(file = str_extract(file, "1a|1b|1c"))
-
-# export data for feature extraction on RStudio server
-# export(df, here("data", "df.csv"))
 ```
 
 
@@ -180,11 +179,23 @@ df <- bind_cols(df, synts[,-1])
 
 ### Natural Language Proccessing
 ```{r}
+reticulate::import('torch')
+reticulate::import('numpy')
+reticulate::import('transformers')
+reticulate::import('nltk')
+reticulate::import('tokenizers')
 
+embeddings <- textEmbed(x = df$conflict_text,
+                        model = "roberta-base",
+                        layers = 12)
+
+df <- bind_cols(df, embeddings$x)
 ```
 
 ### Linguistic inquiry and word count (LIWC)
 ```{r}
+
+
 
 ```
 
@@ -198,6 +209,11 @@ df <- bind_cols(df, mf)
 ```
 
 
+```{r}
+
+
+
+```
 
 
 
