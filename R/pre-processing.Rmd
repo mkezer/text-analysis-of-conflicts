@@ -109,9 +109,72 @@ df %>%
 
 ### Text statistics via udpipe
 ```{r}
+udpipe_download_model(language = "english")
 
+ud_eng <- udpipe_load_model("D:/PhD/2021 Fall/EDLD654 - Machine Learning/text-analysis-of-conflicts/R/english-ewt-ud-2.5-191206.udpipe")
 
+annotated <- udpipe_annotate(ud_eng, x = df$conflict_text)
+annotated <- as.data.frame(annotated)
+annotated <- cbind_morphological(annotated)
 
+# part of speech tags
+pos <-
+annotated %>% 
+  group_by(doc_id) %>% 
+  count(upos) %>% 
+  mutate(doc_id = parse_number(doc_id)) %>% 
+  arrange(doc_id) %>% 
+  pivot_wider(names_from = upos,
+              values_from = n)
+
+df <- bind_cols(df, pos[,-1])
+
+# xpos
+xpos <-
+annotated %>% 
+  group_by(doc_id) %>% 
+  count(xpos) %>% 
+  mutate(doc_id = parse_number(doc_id)) %>% 
+  arrange(doc_id) %>% 
+  pivot_wider(names_from = xpos,
+              values_from = n) %>% 
+  rename(comma = 2,
+         period = 3,
+         quotation = 4)
+
+df <- bind_cols(df, xpos[,-1])
+
+# morphological features
+morphs <-
+  annotated %>% 
+  select(doc_id, starts_with("morph")) 
+
+morph_freq <-
+morphs %>% 
+  pivot_longer(cols = -doc_id,
+               names_to = "var",
+               values_to = "val") %>% 
+  group_by(doc_id, var) %>% 
+  count(val) %>% 
+  drop_na() %>% 
+  pivot_wider(names_from = c(var, val),
+              values_from = n) %>% 
+  mutate(doc_id = parse_number(doc_id)) %>% 
+  arrange(doc_id)
+
+df <- bind_cols(df, morph_freq[,-1])
+
+# syntactic relations
+synts <-
+  annotated %>% 
+    group_by(doc_id) %>% 
+    count(dep_rel) %>% 
+    mutate(doc_id = parse_number(doc_id)) %>% 
+    arrange(doc_id) %>% 
+    pivot_wider(names_from = dep_rel,
+                values_from = n)
+
+df <- bind_cols(df, synts[,-1])
 ```
 
 ### Natural Language Proccessing
