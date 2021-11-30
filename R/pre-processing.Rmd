@@ -28,6 +28,7 @@ library(magrittr)
 
 library(quanteda)
 library(quanteda.textstats)
+library(quanteda.dictionaries)
 library(udpipe)
 ```
 
@@ -189,7 +190,11 @@ df <- bind_cols(df, synts[,-1])
 
 ### Moral foundations dictionary
 ```{r}
+mf <- liwcalike(df$conflict_text, 
+                dictionary = data_dictionary_MFD) %>% 
+  select(care.virtue:sanctity.vice)
 
+df <- bind_cols(df, mf)
 ```
 
 
