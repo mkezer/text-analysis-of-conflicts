@@ -22,8 +22,10 @@ knitr::opts_chunk$set(echo = TRUE,
 library(fs)
 library(here)
 library(rio)
+
 library(tidyverse)
 library(magrittr)
+
 library(knitr)
 library(kableExtra)
 
@@ -33,20 +35,28 @@ library(MLmetrics)
 library(cutpointr)
 library(ranger)
 library(doParallel)
+
+library(quanteda)
 ```
 
 
 # Import data
 ```{r}
+# data files
 df <- dir_ls(here("data"), glob = "*.xlsx") %>% 
   map_dfr(., import, .id = "file") %>% 
   mutate(file = str_extract(file, "1a|1b|1c"))
 
 # export data for feature extraction on RStudio server
 # export(df, here("data", "df.csv"))
+
+# text embeddings
+
+
 ```
 
 
+# 
 
 
 
