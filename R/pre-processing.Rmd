@@ -26,21 +26,13 @@ library(rio)
 library(tidyverse)
 library(magrittr)
 
-library(knitr)
-library(kableExtra)
-
-library(caret)
-library(recipes)
-library(MLmetrics)
-library(cutpointr)
-library(ranger)
-library(doParallel)
-
 library(quanteda)
+library(quanteda.textstats)
+library(udpipe)
 ```
 
 
-# Import data
+## Data
 ```{r}
 # data files
 df <- dir_ls(here("data"), glob = "*.xlsx") %>% 
@@ -49,20 +41,93 @@ df <- dir_ls(here("data"), glob = "*.xlsx") %>%
 
 # export data for feature extraction on RStudio server
 # export(df, here("data", "df.csv"))
+```
 
-# text embeddings
+
+## Feature generation {.tabset .tabset-fade}
+### Summary table
+```{r}
+
+```
+
+### Textual statistics with quanteda
+```{r}
+# tokenize
+tokenized <- tokens(df$conflict_text,
+                    remove_punct = FALSE,
+                    remove_numbers = TRUE,
+                    remove_symbols = TRUE,
+                    remove_separators = TRUE)
+
+# document-feature matrix
+dm <- dfm(tokenized)
+
+# basic statistics and entropy
+text_stats <- textstat_summary(dm)
+
+text_stats %<>% 
+  mutate(chars = nchar(df$conflict_text),
+         sents = nsentence(df$conflict_text),
+         words = tokens - puncts,
+         entropy = textstat_entropy(dm)$entropy) %>% 
+  select(chars:puncts, words, entropy)
+
+df <- bind_cols(df, text_stats)
+
+# word length features
+word_lengths <- map(tokenized, nchar)
+
+df %<>% 
+  mutate(wl_mean = map(word_lengths, mean),
+         wl_median = map(word_lengths, median),
+         wl_sd = map(word_lengths, sd),
+         wl_min = map(word_lengths, min),
+         wl_max = map(word_lengths, max))
+
+# lexical diversity
+ld <-
+  textstat_lexdiv(dm,
+                  remove_numbers = TRUE,
+                  remove_punct   = TRUE,
+                  remove_symbols = TRUE,
+                  measure        = "all")
+
+
+
+# measures of readability
+mor <-
+  textstat_readability(df$conflict_text,
+                       measure = "all")
+
+df <- bind_cols(df, mor[,-1])
+
+# features generated
+df %>% 
+  select(chars:84) %>% 
+  names()
+```
+
+### Text statistics via udpipe
+```{r}
+
 
 
 ```
 
+### Natural Language Proccessing
+```{r}
 
-# 
+```
 
+### Linguistic inquiry and word count (LIWC)
+```{r}
 
+```
 
+### Moral foundations dictionary
+```{r}
 
-
-
+```
 
 
 
