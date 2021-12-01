@@ -2,6 +2,7 @@
 title: "Modeling"
 output: 
     html_document:
+      theme: cerulean
       code_download: TRUE
       toc: TRUE
       toc_float:
@@ -34,64 +35,58 @@ library(vip)
 library(doParallel)
 ```
 
-
 ## Data
 ```{r cache=TRUE}
 # data files
-df <- import(here("data", "df.csv"))
-
+df <- import(here("data", "df_clean.csv"))
 
 ```
 
-
+# Outcome 1: Judgment of self
 ## Prepare the recipe
 ```{r}
 # Train/Test Split
-  
-  loc      <- sample(1:nrow(readability), round(nrow(readability) * 0.9))
-  read_tr  <- readability[loc, ]
-  read_te  <- readability[-loc, ]
-
-# Blueprint
-
-  blueprint <- recipe(x     = readability,
-                      vars  = colnames(readability),
-                      roles = c(rep('predictor',990),'outcome')) %>%
-    step_zv(all_numeric()) %>%
-    step_nzv(all_numeric()) %>%
-    step_impute_mean(all_numeric()) %>%
-    step_normalize(all_numeric_predictors()) %>%
-    step_corr(all_numeric(),threshold=0.9)
+loc      <- sample(1:nrow(df), round(nrow(df) * 0.8))
+df_tr  <- df[loc, ]
+df_te  <- df[-loc, ]
 
 # Cross validation settings
+# Randomly shuffle the data
+df_tr <- df_tr[sample(nrow(df_tr)),]
+
+# Create 10 folds with equal size
+folds <- cut(seq(1, nrow(df_tr)),
+             breaks = 10,
+             labels = FALSE)
   
-    # Randomly shuffle the data
+# Create the list for each fold 
+my.indices <- vector('list',10)
+for(i in 1:10){
+  my.indices[[i]] <- which(folds != i)
+}
 
-      read_tr = read_tr[sample(nrow(read_tr)),]
+cv <- trainControl(method = "cv",
+                   index  = my.indices)
 
-    # Create 10 folds with equal size
+# Blueprint
+blueprint <- recipe(x     = df,
+                    vars  = colnames(df),
+                    roles = c(rep('predictor',990),'outcome')) %>% 
+  step_zv(all_numeric()) %>%
+  step_nzv(all_numeric()) %>%
+  step_impute_mean(all_numeric()) %>%
+  step_normalize(all_numeric_predictors()) %>%
+  step_corr(all_numeric(),threshold=0.9)
 
-      folds = cut(seq(1,nrow(read_tr)),breaks=10,labels=FALSE)
-  
-    # Create the list for each fold 
-      
-      my.indices <- vector('list',10)
-      for(i in 1:10){
-        my.indices[[i]] <- which(folds!=i)
-      }
-      
-  cv <- trainControl(method = "cv",
-                     index  = my.indices)
-
-
+blueprint
 ```
 
-
-## Models
-### Linear regression with ridge penalty
+## Linear regression with ridge penalty
 ```{r}
-grid <- data.frame(alpha = 0, lambda = seq(0.01,3,.01)) 
-grid
+# Tune Grid
+grid <- data.frame(alpha = 0, 
+                   lambda = seq(0.01,3,.01))
+
   
 # Train the model
 ridge <- caret::train(blueprint, 
@@ -101,89 +96,86 @@ ridge <- caret::train(blueprint,
                       tuneGrid  = grid)
   
 ridge$results
-
 ridge$bestTune
   
 plot(ridge)
   
 predict_te_ridge <- predict(ridge, read_te)
 
-
-
 vip(ridge, num_features = 10, geom = "point") + 
   theme_bw()
 ```
 
-
-### Linear regression with lasso penalty
+## Linear regression with lasso penalty
 ```{r}
-# Blueprint
-
-  blueprint <- recipe(x     = readability,
-                      vars  = colnames(readability),
-                      roles = c(rep('predictor',990),'outcome')) %>%
-    step_zv(all_numeric()) %>%
-    step_nzv(all_numeric()) %>%
-    step_impute_mean(all_numeric()) %>%
-    step_normalize(all_numeric_predictors()) %>%
-    step_corr(all_numeric(),threshold=0.9)
-
 # Cross validation settings
+# Randomly shuffle the data
+df_tr <- df_tr[sample(nrow(df_tr)),]
+
+# Create 10 folds with equal size
+folds <- cut(seq(1, nrow(df_tr)),
+             breaks = 10,
+             labels = FALSE)
   
-    # Randomly shuffle the data
+# Create the list for each fold 
+my.indices <- vector('list',10)
+for(i in 1:10){
+  my.indices[[i]] <- which(folds != i)
+}
 
-      read_tr = read_tr[sample(nrow(read_tr)),]
-
-    # Create 10 folds with equal size
-
-      folds = cut(seq(1,nrow(read_tr)),breaks=10,labels=FALSE)
-  
-    # Create the list for each fold 
-      
-      my.indices <- vector('list',10)
-      for(i in 1:10){
-        my.indices[[i]] <- which(folds!=i)
-      }
-      
-  cv <- trainControl(method = "cv",
-                     index  = my.indices)
+cv <- trainControl(method = "cv",
+                   index  = my.indices)
   
 # Tune Grid  
-  
-  # Note that we set the value of alpha to 1 for lasso regression
-  
-  grid <- data.frame(alpha = 1, lambda = seq(0.01,3,.01)) 
+# Note that we set the value of alpha to 1 for lasso regression
+grid <- data.frame(alpha = 1, lambda = seq(0.01,3,.01)) 
     
 # Train the model
+lasso <- caret::train(blueprint, 
+                      data      = read_tr, 
+                      method    = "glmnet", 
+                      trControl = cv,
+                      tuneGrid  = grid)
 
-  lasso <- caret::train(blueprint, 
-                        data      = read_tr, 
-                        method    = "glmnet", 
-                        trControl = cv,
-                        tuneGrid  = grid)
-
-  lasso$results
+lasso$results
   
   
-  grid <- data.frame(alpha = 1, lambda = seq(0.001,0.015,.001)) 
-
-grid
+grid <- data.frame(alpha = 1, lambda = seq(0.001,0.015,.001)) 
     
 # Train the model
+lasso2 <- caret::train(blueprint, 
+                      data      = read_tr, 
+                      method    = "glmnet", 
+                      trControl = cv,
+                      tuneGrid  = grid)
 
-  lasso2 <- caret::train(blueprint, 
-                        data      = read_tr, 
-                        method    = "glmnet", 
-                        trControl = cv,
-                        tuneGrid  = grid)
-
-  lasso2$results
+lasso2$results
 ```
 
-
-# Gradient Boosting Trees
+## Gradient Boosting Trees
 ```{r}
+# Set the multiple cores for parallel processing
+ncores <- 10   
 
+cl <- makePSOCKcluster(ncores)
+
+registerDoParallel(cl)
+
+# Grid Settings  
+grid <- expand.grid(shrinkage         = 0.1,
+                    n.trees           = 1:1000,
+                    interaction.depth = 5,
+                    n.minobsinnode    = 10)
+
+gbm1 <- caret::train(blueprint_readability,
+                     data         = read_tr,
+                     method       = 'gbm',
+                     trControl    = cv,
+                     tuneGrid     = grid,
+                     bag.fraction = 1,
+                     verbose      = FALSE)
+
+gbm1$times
 ```
 
 
