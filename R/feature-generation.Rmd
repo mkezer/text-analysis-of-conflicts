@@ -2,6 +2,7 @@
 title: "Feature Generation"
 output: 
     html_document:
+      theme: cerulean
       code_download: TRUE
       toc: TRUE
       toc_float:
@@ -121,7 +122,7 @@ df %>%
 
 ### Text statistics via udpipe
 ```{r}
-udpipe_download_model(language = "english")
+# udpipe_download_model(language = "english")
 
 ud_eng <- udpipe_load_model("D:/PhD/2021 Fall/EDLD654 - Machine Learning/text-analysis-of-conflicts/R/english-ewt-ud-2.5-191206.udpipe")
 
@@ -198,10 +199,11 @@ df <- bind_cols(df, synts[,-1])
 
 ### Linguistic inquiry and word count (LIWC)
 ```{r}
-liwc <- import(here("data", "liwc.csv"))
+liwc <- import(here("data", "liwc_df.csv")) %>% 
+  mutate(across(file:condition, as.factor)) %>% 
+  rename(study = file)
 
-
-df <- bind_cols(df, liwc)
+df <- left_join(df, liwc)
 ```
 
 ### Moral foundations dictionary
