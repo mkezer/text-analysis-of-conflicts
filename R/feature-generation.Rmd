@@ -1,5 +1,5 @@
 ---
-title: "Data processing & Preliminary Analyses"
+title: "Feature Generation"
 output: 
     html_document:
       code_download: TRUE
@@ -41,12 +41,15 @@ library(text)
 df <- dir_ls(here("data"), glob = "*.xlsx") %>% 
   map_dfr(., import, .id = "file") %>% 
   mutate(file = str_extract(file, "1a|1b|1c"))
+
+
 ```
 
 
 ## Feature generation {.tabset .tabset-fade}
 ### Summary table
 ```{r}
+
 
 ```
 
@@ -194,9 +197,10 @@ df <- bind_cols(df, embeddings$x)
 
 ### Linguistic inquiry and word count (LIWC)
 ```{r}
+liwc <- import(here("data", "liwc.csv"))
 
 
-
+df <- bind_cols(df, liwc)
 ```
 
 ### Moral foundations dictionary
@@ -207,14 +211,6 @@ mf <- liwcalike(df$conflict_text,
 
 df <- bind_cols(df, mf)
 ```
-
-
-```{r}
-
-
-
-```
-
 
 
 
