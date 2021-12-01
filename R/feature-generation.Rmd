@@ -57,12 +57,6 @@ df %>%
 
 
 ## Feature generation {.tabset .tabset-fade}
-### Summary table
-```{r}
-
-
-```
-
 ### Textual statistics with quanteda
 ```{r}
 # tokenize
@@ -188,13 +182,22 @@ synts <-
                 values_from = n)
 
 df <- bind_cols(df, synts[,-1])
+
+# features generated
+names(pos[,-1])
+names(xpos[,-1])
+names(morph_freq[,-1])
+names(synts[,-1])
 ```
 
 ### Natural Language Proccessing
 ```{r}
+embeddings <- import(here("data", "embeddings.csv"))
 
+df <- bind_cols(df, embeddings)
 
-
+# features generated
+names(embeddings)
 ```
 
 ### Linguistic inquiry and word count (LIWC)
@@ -204,6 +207,9 @@ liwc <- import(here("data", "liwc_df.csv")) %>%
   rename(study = file)
 
 df <- left_join(df, liwc)
+
+# features generated
+names(liwc[,-1:-4])
 ```
 
 ### Moral foundations dictionary
@@ -213,6 +219,9 @@ mf <- liwcalike(df$conflict_text,
   select(care.virtue:sanctity.vice)
 
 df <- bind_cols(df, mf)
+
+# features generated
+names(mf)
 ```
 
 
