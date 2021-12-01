@@ -1,0 +1,195 @@
+---
+title: "Modeling"
+output: 
+    html_document:
+      code_download: TRUE
+      toc: TRUE
+      toc_float:
+        collapsed: FALSE
+      toc_depth: 3
+      code_folding: hide
+---
+
+```{r include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      tidy = TRUE, 
+                      cache = TRUE, 
+                      warning = FALSE, 
+                      message = FALSE)
+```
+
+```{r}
+library(here)
+library(rio)
+
+library(tidyverse)
+library(magrittr)
+
+library(recipes)
+library(caret)
+library(ranger)
+library(MLmetrics)
+library(vip)
+
+library(doParallel)
+```
+
+
+## Data
+```{r cache=TRUE}
+# data files
+df <- import(here("data", "df.csv"))
+
+
+```
+
+
+## Prepare the recipe
+```{r}
+# Train/Test Split
+  
+  loc      <- sample(1:nrow(readability), round(nrow(readability) * 0.9))
+  read_tr  <- readability[loc, ]
+  read_te  <- readability[-loc, ]
+
+# Blueprint
+
+  blueprint <- recipe(x     = readability,
+                      vars  = colnames(readability),
+                      roles = c(rep('predictor',990),'outcome')) %>%
+    step_zv(all_numeric()) %>%
+    step_nzv(all_numeric()) %>%
+    step_impute_mean(all_numeric()) %>%
+    step_normalize(all_numeric_predictors()) %>%
+    step_corr(all_numeric(),threshold=0.9)
+
+# Cross validation settings
+  
+    # Randomly shuffle the data
+
+      read_tr = read_tr[sample(nrow(read_tr)),]
+
+    # Create 10 folds with equal size
+
+      folds = cut(seq(1,nrow(read_tr)),breaks=10,labels=FALSE)
+  
+    # Create the list for each fold 
+      
+      my.indices <- vector('list',10)
+      for(i in 1:10){
+        my.indices[[i]] <- which(folds!=i)
+      }
+      
+  cv <- trainControl(method = "cv",
+                     index  = my.indices)
+
+
+```
+
+
+## Models
+### Linear regression with ridge penalty
+```{r}
+grid <- data.frame(alpha = 0, lambda = seq(0.01,3,.01)) 
+grid
+  
+# Train the model
+ridge <- caret::train(blueprint, 
+                      data      = read_tr, 
+                      method    = "glmnet", 
+                      trControl = cv,
+                      tuneGrid  = grid)
+  
+ridge$results
+
+ridge$bestTune
+  
+plot(ridge)
+  
+predict_te_ridge <- predict(ridge, read_te)
+
+
+
+vip(ridge, num_features = 10, geom = "point") + 
+  theme_bw()
+```
+
+
+### Linear regression with lasso penalty
+```{r}
+# Blueprint
+
+  blueprint <- recipe(x     = readability,
+                      vars  = colnames(readability),
+                      roles = c(rep('predictor',990),'outcome')) %>%
+    step_zv(all_numeric()) %>%
+    step_nzv(all_numeric()) %>%
+    step_impute_mean(all_numeric()) %>%
+    step_normalize(all_numeric_predictors()) %>%
+    step_corr(all_numeric(),threshold=0.9)
+
+# Cross validation settings
+  
+    # Randomly shuffle the data
+
+      read_tr = read_tr[sample(nrow(read_tr)),]
+
+    # Create 10 folds with equal size
+
+      folds = cut(seq(1,nrow(read_tr)),breaks=10,labels=FALSE)
+  
+    # Create the list for each fold 
+      
+      my.indices <- vector('list',10)
+      for(i in 1:10){
+        my.indices[[i]] <- which(folds!=i)
+      }
+      
+  cv <- trainControl(method = "cv",
+                     index  = my.indices)
+  
+# Tune Grid  
+  
+  # Note that we set the value of alpha to 1 for lasso regression
+  
+  grid <- data.frame(alpha = 1, lambda = seq(0.01,3,.01)) 
+    
+# Train the model
+
+  lasso <- caret::train(blueprint, 
+                        data      = read_tr, 
+                        method    = "glmnet", 
+                        trControl = cv,
+                        tuneGrid  = grid)
+
+  lasso$results
+  
+  
+  grid <- data.frame(alpha = 1, lambda = seq(0.001,0.015,.001)) 
+
+grid
+    
+# Train the model
+
+  lasso2 <- caret::train(blueprint, 
+                        data      = read_tr, 
+                        method    = "glmnet", 
+                        trControl = cv,
+                        tuneGrid  = grid)
+
+  lasso2$results
+```
+
+
+# Gradient Boosting Trees
+```{r}
+
+```
+
+
+
+
+
+
+
+
