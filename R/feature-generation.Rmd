@@ -30,6 +30,8 @@ library(quanteda)
 library(quanteda.textstats)
 library(quanteda.dictionaries)
 library(udpipe)
+
+theme_set(theme_bw())
 ```
 
 
@@ -38,41 +40,18 @@ library(udpipe)
 df <- dir_ls(here("data"), glob = "*.xlsx") %>% 
   map_dfr(., import, .id = "file") %>% 
   mutate(file = str_extract(file, "1a|1b|1c"),
-         across(file:condition, as.factor)
-         )
-
-# recode race and gender
-df %<>% 
-  mutate(
-    race = recode(race,
-                  `` = "",
-                  `` = "",
-                  `` = "",
-                  `` = "",
-                  `` = "",
-                  `` = "",
-                  `` = "",
-                  `` = "",
-                  `` = "",
-                  `` = ""),
-
-    gender = recode(gender,
-                    `` = "",
-                    `` = "",
-                    `` = "",
-                    `` = "",
-                    `` = "",
-                    `` = "",
-                    `` = "",
-                    `` = "",
-                    `` = "",
-                    `` = "")      
-  )
+         across(c(file:condition, gender, race), as.factor)
+         ) %>% 
+  rename(study = file)
 
 finalfit::ff_glimpse(df)
-str(df)
 
-frq(df$race)
+df %>% 
+  select(study, p_right:t_right) %>% 
+  gather(var, val, -study) %>% 
+  ggplot(aes(val)) +
+  geom_density() +
+  facet_wrap(study ~ var)
 ```
 
 
