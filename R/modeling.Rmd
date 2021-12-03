@@ -76,7 +76,7 @@ blueprint <- recipe(x     = df,
   step_nzv(all_numeric()) %>%
   step_impute_mean(all_numeric()) %>%
   step_normalize(all_numeric_predictors()) %>%
-  step_corr(all_numeric(),threshold=0.9)
+  step_corr(all_numeric(),threshold = 0.8)
 
 blueprint
 ```

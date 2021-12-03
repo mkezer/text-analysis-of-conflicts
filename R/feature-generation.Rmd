@@ -35,7 +35,6 @@ library(udpipe)
 theme_set(theme_bw())
 ```
 
-
 ## Data
 ```{r}
 df <- dir_ls(here("data"), glob = "*.xlsx") %>% 
@@ -99,7 +98,7 @@ ld <-
                   remove_symbols = TRUE,
                   measure        = "all")
 
-
+df <- bind_cols(df, ld[,-1])
 
 # measures of readability
 mor <-
@@ -110,14 +109,13 @@ df <- bind_cols(df, mor[,-1])
 
 # features generated
 df %>% 
-  select(chars:84) %>% 
+  select(chars:83) %>% 
   names()
 ```
 
 ### Text statistics via udpipe
 ```{r}
 # udpipe_download_model(language = "english")
-
 ud_eng <- udpipe_load_model("D:/PhD/2021 Fall/EDLD654 - Machine Learning/text-analysis-of-conflicts/R/english-ewt-ud-2.5-191206.udpipe")
 
 annotated <- udpipe_annotate(ud_eng, x = df$conflict_text)
@@ -225,6 +223,12 @@ names(mf)
 ```
 
 
+```{r}
+# export final dataset for modeling
+
+# export(df, here("data", "df_final.csv"))
+
+```
 
 
 
