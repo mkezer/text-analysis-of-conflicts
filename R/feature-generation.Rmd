@@ -44,8 +44,6 @@ df <- dir_ls(here("data"), glob = "*.xlsx") %>%
          ) %>% 
   rename(study = file)
 
-finalfit::ff_glimpse(df)
-
 df %>% 
   select(study, p_right:t_right) %>% 
   gather(var, val, -study) %>% 
@@ -132,6 +130,10 @@ annotated %>%
   pivot_wider(names_from = upos,
               values_from = n)
 
+pos %<>% # replace NA with 0 since they are actually 0
+  mutate(across(everything(), ~coalesce(., 0))
+         )
+
 df <- bind_cols(df, pos[,-1])
 
 # xpos
@@ -142,10 +144,12 @@ annotated %>%
   mutate(doc_id = parse_number(doc_id)) %>% 
   arrange(doc_id) %>% 
   pivot_wider(names_from = xpos,
-              values_from = n) %>% 
-  rename(comma = 2,
-         period = 3,
-         quotation = 4)
+              values_from = n)
+
+xpos %<>% # replace NA with 0 since they are actually 0
+  mutate(across(everything(), ~coalesce(., 0))
+         ) %>% 
+  janitor::clean_names()
 
 df <- bind_cols(df, xpos[,-1])
 
@@ -167,6 +171,10 @@ morphs %>%
   mutate(doc_id = parse_number(doc_id)) %>% 
   arrange(doc_id)
 
+morph_freq %<>% # replace NA with 0 since they are actually 0
+  mutate(across(everything(), ~coalesce(., 0))
+         )
+
 df <- bind_cols(df, morph_freq[,-1])
 
 # syntactic relations
@@ -177,7 +185,12 @@ synts <-
     mutate(doc_id = parse_number(doc_id)) %>% 
     arrange(doc_id) %>% 
     pivot_wider(names_from = dep_rel,
-                values_from = n)
+                values_from = n) %>% 
+  janitor::clean_names()
+
+synts %<>% # replace NA with 0 since they are actually 0
+  mutate(across(everything(), ~coalesce(., 0))
+         )
 
 df <- bind_cols(df, synts[,-1])
 
@@ -202,9 +215,9 @@ names(embeddings)
 ```{r}
 liwc <- import(here("data", "liwc_df.csv")) %>% 
   mutate(across(file:condition, as.factor)) %>% 
-  rename(study = file)
+  select(WC:OtherP)
 
-df <- left_join(df, liwc)
+df <- bind_cols(df, liwc)
 
 # features generated
 names(liwc[,-1:-4])
@@ -223,11 +236,13 @@ names(mf)
 ```
 
 
+
 ```{r}
 # export final dataset for modeling
 
 # export(df, here("data", "df_final.csv"))
 
+rm(list = gdata::keep(df, annotated))
 ```
 
 
