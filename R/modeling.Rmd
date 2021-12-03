@@ -45,6 +45,9 @@ df %<>%
   select(participant, p_right, everything(),
          -study, -condition, -conflict_text) %>% 
   mutate(across(c(participant, gender, race), as.factor))
+
+id <- "participant"
+categorical <- c("gender", "race")
 ```
 
 # Outcome 1: Judgment of self
@@ -75,21 +78,18 @@ cv <- trainControl(method = "cv",
                    index  = my.indices)
 
 # Blueprint
-df %>% 
-  select(where(is.factor)) %>% 
-  names()
-
-str(df)
-
 blueprint <- recipe(x     = df,
                     vars  = colnames(df),
-                    roles = c("id", "outcome", rep("predictor",990))
+                    roles = c("id", "outcome", rep("predictor", 1095))
                     ) %>% 
-  step_zv(all_numeric()) %>%
-  step_nzv(all_numeric()) %>%
-  step_impute_mean(all_numeric()) %>%
+  step_zv(all_numeric_predictors()) %>%
+  step_nzv(all_numeric_predictors()) %>%
+  step_impute_mean(all_numeric_predictors()) %>%
   step_normalize(all_numeric_predictors()) %>%
-  step_corr(all_numeric(),threshold = 0.8)
+  step_corr(all_numeric_predictors(), 
+            threshold = 0.8) %>% 
+  step_dummy(all_of(categorical),
+             one_hot = TRUE)
 
 blueprint
 ```
@@ -98,7 +98,7 @@ blueprint
 ```{r}
 # Tune Grid
 grid <- data.frame(alpha = 0, 
-                   lambda = seq(0.01,3,.01))
+                   lambda = seq(0.01, 3, 0.01))
 
   
 # Train the model
