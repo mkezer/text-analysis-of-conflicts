@@ -38,8 +38,13 @@ library(doParallel)
 ## Data
 ```{r cache=TRUE}
 # data files
-df <- import(here("data", "df_clean.csv"))
+df <- import(here("data", "df_final.csv"))
 
+# df without condition
+df %<>% 
+  select(participant, p_right, everything(),
+         -study, -condition, -conflict_text) %>% 
+  mutate(across(c(participant, gender, race), as.factor))
 ```
 
 # Outcome 1: Judgment of self
@@ -61,6 +66,7 @@ folds <- cut(seq(1, nrow(df_tr)),
   
 # Create the list for each fold 
 my.indices <- vector('list',10)
+
 for(i in 1:10){
   my.indices[[i]] <- which(folds != i)
 }
@@ -69,9 +75,16 @@ cv <- trainControl(method = "cv",
                    index  = my.indices)
 
 # Blueprint
+df %>% 
+  select(where(is.factor)) %>% 
+  names()
+
+str(df)
+
 blueprint <- recipe(x     = df,
                     vars  = colnames(df),
-                    roles = c(rep('predictor',990),'outcome')) %>% 
+                    roles = c("id", "outcome", rep("predictor",990))
+                    ) %>% 
   step_zv(all_numeric()) %>%
   step_nzv(all_numeric()) %>%
   step_impute_mean(all_numeric()) %>%
