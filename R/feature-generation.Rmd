@@ -236,9 +236,11 @@ names(mf)
 ```
 
 
-
 ```{r}
 # export final dataset for modeling
+
+df %<>% 
+  filter(gender %in% c("female", "male"))
 
 # export(df, here("data", "df_final.csv"))
 
