@@ -249,7 +249,7 @@ df %<>%
            participant %in% s1b_id$participant) %>% 
   filter(condition %in% c("control", "pt"))
 
-export(df, here("data", "df_final.csv"))
+# export(df, here("data", "df_final.csv"))
 ```
 
 
