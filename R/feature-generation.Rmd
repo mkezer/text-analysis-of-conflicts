@@ -42,7 +42,8 @@ df <- dir_ls(here("data"), glob = "*.xlsx") %>%
   mutate(file = str_extract(file, "1a|1b|1c"),
          across(c(file:condition, gender, race), as.factor)
          ) %>% 
-  rename(study = file)
+  rename(study = file) %>% 
+  select(-gender, -race)
 
 df %>% 
   select(study, p_right:t_right) %>% 
@@ -51,7 +52,6 @@ df %>%
   geom_density() +
   facet_wrap(study ~ var)
 ```
-
 
 ## Feature generation {.tabset .tabset-fade}
 ### Textual statistics with quanteda
@@ -107,7 +107,7 @@ df <- bind_cols(df, mor[,-1])
 
 # features generated
 df %>% 
-  select(chars:83) %>% 
+  select(chars:81) %>% 
   names()
 ```
 
@@ -238,13 +238,18 @@ names(mf)
 
 ```{r}
 # export final dataset for modeling
-
+s1b_id <-
+  df %>% 
+  filter(study == "1b",
+         condition == "pt") %>% 
+  select(participant)
+  
 df %<>% 
-  filter(gender %in% c("female", "male"))
+  filter(study %in% c("1a", "1c") |
+           participant %in% s1b_id$participant) %>% 
+  filter(condition %in% c("control", "pt"))
 
-# export(df, here("data", "df_final.csv"))
-
-rm(list = gdata::keep(df, annotated))
+export(df, here("data", "df_final.csv"))
 ```
 
 
