@@ -50,8 +50,9 @@ df %<>%
   janitor::clean_names()
 ```
 
-# Outcome 1: Judgment of self {.tabset .tabset-fade}
-## Prepare the recipe
+# Without the condition variable
+## Outcome 1: Judgment of self {.tabset .tabset-fade}
+### Prepare the recipe
 ```{r}
 set.seed(45)
 
@@ -95,7 +96,7 @@ blueprint <- recipe(x     = df,
 blueprint
 ```
 
-## Linear regression with ridge penalty
+### Linear regression with ridge penalty
 ```{r, cache = TRUE}
 # Tune Grid
 grid <- data.frame(alpha = 0, 
@@ -161,7 +162,7 @@ kable(ridge_eval,
   row_spec(0, background = "gray", color = "white")
 ```
 
-## Linear regression with lasso penalty
+### Linear regression with lasso penalty
 ```{r, cache = TRUE}
 # Cross validation settings
 seed(46)
@@ -220,7 +221,7 @@ kable(lasso_eval,
   row_spec(0, background = "gray", color = "white")
 ```
 
-## Gradient Boosting Trees
+### Gradient Boosting Trees
 ```{r}
 # Cross validation settings 
 seed(47)
@@ -300,8 +301,8 @@ plot(gbm3, type = "l")
 ```
 
 
-# Outcome 2: Judgment of the other person {.tabset .tabset-fade}
-## Prepare the recipe
+## Outcome 2: Judgment of the other person {.tabset .tabset-fade}
+### Prepare the recipe
 ```{r}
 set.seed(50)
 
@@ -348,7 +349,7 @@ blueprint <- recipe(x     = df,
 blueprint
 ```
 
-## Linear regression with ridge penalty
+### Linear regression with ridge penalty
 ```{r}
 # Tune Grid
 grid <- data.frame(alpha = 0, 
@@ -380,7 +381,7 @@ ridge2$bestTune
 
 # Tune grid v3
 grid3 <- data.frame(alpha = 0, 
-                    lambda = seq(12, 14, .01))
+                    lambda = seq(4, 6, .01))
   
 # Train the model v3
 ridge3 <- caret::train(blueprint, 
@@ -414,7 +415,7 @@ kable(ridge_eval,
   row_spec(0, background = "gray", color = "white")
 ```
 
-## Linear regression with lasso penalty
+### Linear regression with lasso penalty
 ```{r}
 # Cross validation settings
 set.seed(51)
@@ -473,7 +474,7 @@ kable(lasso_eval,
   row_spec(0, background = "gray", color = "white")
 ```
 
-## Gradient Boosting Trees
+### Gradient Boosting Trees
 ```{r}
 # Cross validation settings 
 seed(52)
@@ -550,11 +551,48 @@ gbm3 <- caret::train(blueprint_readability,
 plot(gbm3, type = "l")
 ```
 
+# With the condition variable
+## Outcome 1: Judgment of self {.tabset .tabset-fade}
+### Prepare the recipe
+```{r}
 
+```
 
+### Linear regression with ridge penalty
+```{r}
 
+```
 
+### Linear regression with lasso penalty
+```{r}
 
+```
+
+### Gradient Boosting Trees
+```{r}
+
+```
+
+## Outcome 2: Judgment of the other person {.tabset .tabset-fade}
+### Prepare the recipe
+```{r}
+
+```
+
+### Linear regression with ridge penalty
+```{r}
+
+```
+
+### Linear regression with lasso penalty
+```{r}
+
+```
+
+### Gradient Boosting Trees
+```{r}
+
+```
 
 
 
