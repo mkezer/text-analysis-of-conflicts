@@ -50,9 +50,11 @@ df %<>%
   janitor::clean_names()
 ```
 
-# Outcome 1: Judgment of self
+# Outcome 1: Judgment of self {.tabset .tabset-fade}
 ## Prepare the recipe
 ```{r}
+set.seed(45)
+
 # Train/Test Split
 loc      <- sample(1:nrow(df), round(nrow(df) * 0.8))
 df_tr  <- df[loc, ]
@@ -60,7 +62,6 @@ df_te  <- df[-loc, ]
 
 # Cross validation settings
 # Randomly shuffle the data
-set.seed(45)
 df_tr <- df_tr[sample(nrow(df_tr)),]
 
 # Create 10 folds with equal size
@@ -163,7 +164,7 @@ kable(ridge_eval,
 ## Linear regression with lasso penalty
 ```{r, cache = TRUE}
 # Cross validation settings
-set.seed(46)
+seed(46)
 # Randomly shuffle the data
 df_tr <- df_tr[sample(nrow(df_tr)),]
 
@@ -222,7 +223,7 @@ kable(lasso_eval,
 ## Gradient Boosting Trees
 ```{r}
 # Cross validation settings 
-set.seed(47)
+seed(47)
 df_tr <- df_tr[sample(nrow(df_tr)),]
 
 # Create 10 folds with equal size
@@ -260,11 +261,10 @@ gbm1 <- caret::train(blueprint,
                      verbose      = FALSE)
 
 plot(gbm1, type = "l")
-gbm1$bestTune
 
 ## Step 2: Tune the interaction depth and minimum number of observations
 grid <- expand.grid(shrinkage         = 0.1,
-                    n.trees           = 28,
+                    n.trees           = 200,
                     interaction.depth = 1:15,
                     n.minobsinnode    = c(5,10,20,30,40,50))
 
@@ -278,15 +278,251 @@ gbm2 <- caret::train(blueprint,
                      verbose = FALSE)
 
 plot(gbm2, type = "l")
-gbm2$bestTune
 
 ## Step 3: Lower the learning rate and increase the number of trees
 grid <- expand.grid(shrinkage         = 0.01,
                     n.trees           = 1:5000,
-                    interaction.depth = 10,
-                    n.minobsinnode    = 50)
+                    interaction.depth = 9,
+                    n.minobsinnode    = 40)
 
-gbm3 <- caret::train(blueprint,
+
+gbm3 <- caret::train(blueprint_readability,
+                     data      = read_tr,
+                     method    = 'gbm',
+                     trControl = cv,
+                     tuneGrid  = grid,
+                     bag.fraction = 1,
+                     verbose = FALSE)
+
+plot(gbm3, type = "l")
+
+
+```
+
+
+# Outcome 2: Judgment of the other person {.tabset .tabset-fade}
+## Prepare the recipe
+```{r}
+set.seed(50)
+
+df %<>% 
+  relocate(t_right, .after = participant)
+
+# Train/Test Split
+loc      <- sample(1:nrow(df), round(nrow(df) * 0.8))
+df_tr  <- df[loc, ]
+df_te  <- df[-loc, ]
+
+# Cross validation settings
+# Randomly shuffle the data
+df_tr <- df_tr[sample(nrow(df_tr)), ]
+
+# Create 10 folds with equal size
+folds <- cut(seq(1, nrow(df_tr)),
+             breaks = 10,
+             labels = FALSE)
+  
+# Create the list for each fold 
+my.indices <- vector('list',10)
+
+for(i in 1:10){
+  my.indices[[i]] <- which(folds != i)
+}
+
+cv <- trainControl(method = "cv",
+                   index  = my.indices)
+
+# Blueprint
+blueprint <- recipe(x     = df,
+                    vars  = colnames(df),
+                    roles = c("id", "outcome", rep("predictor", 1095))
+                    ) %>% 
+  step_zv(all_numeric_predictors()) %>%
+  step_nzv(all_numeric_predictors()) %>%
+  step_impute_mean(all_numeric()) %>%
+  step_normalize(all_numeric_predictors()) %>%
+  step_corr(all_numeric_predictors(), 
+            threshold = 0.8) %>% 
+  step_rm("p_right", "condition")
+
+blueprint
+```
+
+## Linear regression with ridge penalty
+```{r}
+# Tune Grid
+grid <- data.frame(alpha = 0, 
+                   lambda = seq(0.01, 3, 0.01))
+  
+# Train the model
+ridge <- caret::train(blueprint, 
+                      data      = df_tr, 
+                      method    = "glmnet", 
+                      trControl = cv,
+                      tuneGrid  = grid)
+  
+plot(ridge)
+ridge$bestTune  
+
+# Tune grid v2
+grid2 <- data.frame(alpha = 0, 
+                    lambda = seq(3, 20, 1))
+  
+# Train the model v2
+ridge2 <- caret::train(blueprint, 
+                       data      = df_tr, 
+                       method    = "glmnet", 
+                       trControl = cv,
+                       tuneGrid  = grid2)
+
+plot(ridge2)
+ridge2$bestTune
+
+# Tune grid v3
+grid3 <- data.frame(alpha = 0, 
+                    lambda = seq(12, 14, .01))
+  
+# Train the model v3
+ridge3 <- caret::train(blueprint, 
+                       data      = df_tr, 
+                       method    = "glmnet", 
+                       trControl = cv,
+                       tuneGrid  = grid3)
+  
+plot(ridge3)
+ridge3$bestTune
+
+predict_te_ridge3 <- predict(ridge3, df_te)
+
+vip(ridge3, 
+    num_features = 10, 
+    geom = "point") + 
+  theme_bw()
+
+ridge_eval <-
+  tibble(
+    Model = "Ridge",
+    RMSE = RMSE(predict_te_ridge3, df_te$p_right),
+    MAE = MAE(predict_te_ridge3, df_te$p_right),
+    R2 = R2_Score(predict_te_ridge3, df_te$p_right)
+  )
+
+kable(ridge_eval,
+      digits = 4) %>% 
+  kable_styling(bootstrap_options = c("striped"),
+                full_width = FALSE) %>% 
+  row_spec(0, background = "gray", color = "white")
+```
+
+## Linear regression with lasso penalty
+```{r}
+# Cross validation settings
+set.seed(51)
+# Randomly shuffle the data
+df_tr <- df_tr[sample(nrow(df_tr)),]
+
+# Create 10 folds with equal size
+folds <- cut(seq(1, nrow(df_tr)),
+             breaks = 10,
+             labels = FALSE)
+  
+# Create the list for each fold 
+my.indices <- vector('list',10)
+
+for(i in 1:10){
+  my.indices[[i]] <- which(folds != i)
+}
+
+cv <- trainControl(method = "cv",
+                   index  = my.indices)
+  
+# Tune Grid  
+# Note that we set the value of alpha to 1 for lasso regression
+grid <- data.frame(alpha = 1, 
+                   lambda = seq(0.01, 3, 0.01)) 
+    
+# Train the model
+lasso <- caret::train(blueprint, 
+                      data      = df_tr, 
+                      method    = "glmnet", 
+                      trControl = cv,
+                      tuneGrid  = grid)
+
+plot(lasso)
+lasso$bestTune
+
+predict_te_lasso <- predict(lasso, df_te)
+
+vip(lasso, 
+    num_features = 10, 
+    geom = "point") + 
+  theme_bw()
+
+lasso_eval <-
+  tibble(
+    Model = "Lasso",
+    RMSE = RMSE(predict_te_lasso, df_te$p_right),
+    MAE = MAE(predict_te_lasso, df_te$p_right),
+    R2 = R2_Score(predict_te_lasso, df_te$p_right)
+  )
+
+kable(lasso_eval,
+      digits = 4) %>% 
+  kable_styling(bootstrap_options = c("striped"),
+                full_width = FALSE) %>% 
+  row_spec(0, background = "gray", color = "white")
+```
+
+## Gradient Boosting Trees
+```{r}
+# Cross validation settings 
+seed(52)
+df_tr <- df_tr[sample(nrow(df_tr)),]
+
+# Create 10 folds with equal size
+folds <- cut(seq(1,nrow(df_tr)),
+             breaks = 10,
+             labels = FALSE)
+
+# Create the list containing the row indices for each fold 
+my.indices <- vector('list', 10)
+
+for(i in 1:10){
+  my.indices[[i]] <- which(folds!=i)
+}
+
+cv <- trainControl(method = "cv",
+                   index  = my.indices)
+
+# Set the multiple cores for parallel processing
+ncores <- 4   
+cl <- makePSOCKcluster(ncores)
+registerDoParallel(cl)
+
+## Step 1: Tune the number of trees
+grid <- expand.grid(shrinkage         = 0.1,
+                    n.trees           = 1:1000,
+                    interaction.depth = 5,
+                    n.minobsinnode    = 10)
+
+gbm1 <- caret::train(blueprint,
+                     data         = df_tr,
+                     method       = "gbm",
+                     trControl    = cv,
+                     tuneGrid     = grid,
+                     bag.fraction = 1,
+                     verbose      = FALSE)
+
+plot(gbm1, type = "l")
+
+## Step 2: Tune the interaction depth and minimum number of observations
+grid <- expand.grid(shrinkage         = 0.1,
+                    n.trees           = 200,
+                    interaction.depth = 1:15,
+                    n.minobsinnode    = c(5,10,20,30,40,50))
+
+
+gbm2 <- caret::train(blueprint,
                      data      = df_tr,
                      method    = "gbm",
                      trControl = cv,
@@ -294,47 +530,25 @@ gbm3 <- caret::train(blueprint,
                      bag.fraction = 1,
                      verbose = FALSE)
 
+plot(gbm2, type = "l")
+
+## Step 3: Lower the learning rate and increase the number of trees
+grid <- expand.grid(shrinkage         = 0.01,
+                    n.trees           = 1:5000,
+                    interaction.depth = 9,
+                    n.minobsinnode    = 40)
+
+
+gbm3 <- caret::train(blueprint_readability,
+                     data      = read_tr,
+                     method    = 'gbm',
+                     trControl = cv,
+                     tuneGrid  = grid,
+                     bag.fraction = 1,
+                     verbose = FALSE)
+
 plot(gbm3, type = "l")
-gbm3$bestTune
-
-gbm3$results %>% 
-  select(RMSE, MAE, Rsquared) %>% 
-  slice(245)
-
-predict_te_gbt <- predict(gbm3, df_te)
-
-gbt_eval <-
-  tibble(
-    Model = "Gradient Boosting Trees",
-    RMSE = RMSE(predict_te_gbt, df_te$p_right),
-    MAE = MAE(predict_te_gbt, df_te$p_right),
-    R2 = R2_Score(predict_te_gbt, df_te$p_right)
-  )
-
-kable(gbt_eval,
-      digits = 4) %>% 
-  kable_styling(bootstrap_options = c("striped"),
-                full_width = FALSE) %>% 
-  row_spec(0, background = "gray", color = "white")
 ```
-
-
-## Summary of the models
-```{r}
-eval1 <- bind_rows(ridge_eval, lasso_eval, gbt_eval)
-
-kable(eval1,
-      digits = 4) %>% 
-  kable_styling(bootstrap_options = c("striped"),
-                full_width = FALSE) %>% 
-  row_spec(0, background = "gray", color = "white")
-
-# export(eval1, here("data", "eval1.xlsx"))
-```
-
-
-
-
 
 
 
