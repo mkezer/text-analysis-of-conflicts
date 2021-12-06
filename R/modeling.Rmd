@@ -53,8 +53,6 @@ df %<>%
 # Outcome 1: Judgment of self
 ## Prepare the recipe
 ```{r}
-set.seed(45)
-
 # Train/Test Split
 loc      <- sample(1:nrow(df), round(nrow(df) * 0.8))
 df_tr  <- df[loc, ]
@@ -62,6 +60,7 @@ df_te  <- df[-loc, ]
 
 # Cross validation settings
 # Randomly shuffle the data
+set.seed(45)
 df_tr <- df_tr[sample(nrow(df_tr)),]
 
 # Create 10 folds with equal size
@@ -164,6 +163,7 @@ kable(ridge_eval,
 ## Linear regression with lasso penalty
 ```{r, cache = TRUE}
 # Cross validation settings
+set.seed(46)
 # Randomly shuffle the data
 df_tr <- df_tr[sample(nrow(df_tr)),]
 
@@ -222,6 +222,7 @@ kable(lasso_eval,
 ## Gradient Boosting Trees
 ```{r}
 # Cross validation settings 
+set.seed(47)
 df_tr <- df_tr[sample(nrow(df_tr)),]
 
 # Create 10 folds with equal size
@@ -318,6 +319,18 @@ kable(gbt_eval,
 ```
 
 
+## Summary of the models
+```{r}
+eval1 <- bind_rows(ridge_eval, lasso_eval, gbt_eval)
+
+kable(eval1,
+      digits = 4) %>% 
+  kable_styling(bootstrap_options = c("striped"),
+                full_width = FALSE) %>% 
+  row_spec(0, background = "gray", color = "white")
+
+# export(eval1, here("data", "eval1.xlsx"))
+```
 
 
 
