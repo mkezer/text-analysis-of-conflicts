@@ -166,13 +166,7 @@ vip(ridge3,
     geom = "point") + 
   theme_bw()
 
-ridge_eval <-
-  tibble(
-    Model = "Ridge",
-    RMSE = RMSE(predict_te_ridge3, df_te$p_right),
-    MAE = MAE(predict_te_ridge3, df_te$p_right),
-    R2 = R2_Score(predict_te_ridge3, df_te$p_right)
-  )
+ridge_eval <- metrics(df_te$p_right, predict_te_ridge3, "Ridge")
 
 kable(ridge_eval,
       digits = 4) %>% 
@@ -224,13 +218,7 @@ vip(lasso,
     geom = "point") + 
   theme_bw()
 
-lasso_eval <-
-  tibble(
-    Model = "Lasso",
-    RMSE = RMSE(predict_te_lasso, df_te$p_right),
-    MAE = MAE(predict_te_lasso, df_te$p_right),
-    R2 = R2_Score(predict_te_lasso, df_te$p_right)
-  )
+lasso_eval <- metrics(df_te$p_right, predict_te_lasso, "Lasso")
 
 kable(lasso_eval,
       digits = 4) %>% 
@@ -314,6 +302,17 @@ gbm3 <- caret::train(blueprint_readability,
                      verbose = FALSE)
 
 plot(gbm3, type = "l")
+
+predict_te_gbm1 <- predict(gbm3, df_te)
+
+gmb_eval <- metrics(df_te$p_right, predict_te_gbm1, 
+                    "Gradient Boosting Trees")
+
+kable(gmb_eval,
+      digits = 4) %>% 
+  kable_styling(bootstrap_options = c("striped"),
+                full_width = FALSE) %>% 
+  row_spec(0, background = "gray", color = "white")
 ```
 
 
@@ -469,13 +468,7 @@ vip(lasso2,
     geom = "point") + 
   theme_bw()
 
-lasso_eval2 <-
-  tibble(
-    Model = "Lasso",
-    RMSE = RMSE(predict_te_lasso2, df_te$p_right),
-    MAE = MAE(predict_te_lasso2, df_te$p_right),
-    R2 = R2_Score(predict_te_lasso2, df_te$p_right)
-  )
+lasso_eval2 <- metrics(df_te$p_right, predict_te_lasso2, "Lasso")
 
 kable(lasso_eval2,
       digits = 4) %>% 
@@ -559,16 +552,28 @@ gbm6 <- caret::train(blueprint2,
                      verbose = FALSE)
 
 plot(gbm6, type = "l")
+
+predict_te_gbm2 <- predict(gbm6, df_te)
+
+gmb_eval2 <- metrics(df_te$p_right, predict_te_gbm2, 
+                    "Gradient Boosting Trees")
+
+kable(gmb_eval2,
+      digits = 4) %>% 
+  kable_styling(bootstrap_options = c("striped"),
+                full_width = FALSE) %>% 
+  row_spec(0, background = "gray", color = "white")
 ```
 
 ## Summary of results
 ```{r}
 
+
+
 ```
 
 ```{r}
-save.image(here("data", "modeling.RData"))
-
+save.image(here("R", "modeling.RData"))
 ```
 
 
