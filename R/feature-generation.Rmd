@@ -14,7 +14,7 @@ output:
 ```{r include = FALSE}
 knitr::opts_chunk$set(echo = TRUE, 
                       tidy = TRUE, 
-                      cache = TRUE, 
+                      cache = FALSE, 
                       warning = FALSE, 
                       message = FALSE)
 ```
@@ -56,6 +56,7 @@ df %>%
 ## Feature generation {.tabset .tabset-fade}
 ### Textual statistics with quanteda
 ```{r}
+
 # tokenize
 tokenized <- tokens(df$conflict_text,
                     remove_punct = FALSE,
@@ -114,7 +115,7 @@ df %>%
 ### Text statistics via udpipe
 ```{r}
 # udpipe_download_model(language = "english")
-ud_eng <- udpipe_load_model("D:/PhD/2021 Fall/EDLD654 - Machine Learning/text-analysis-of-conflicts/R/english-ewt-ud-2.5-191206.udpipe")
+ud_eng <- udpipe_load_model(here("R", "english-ewt-ud-2.5-191206.udpipe"))
 
 annotated <- udpipe_annotate(ud_eng, x = df$conflict_text)
 annotated <- as.data.frame(annotated)
@@ -238,18 +239,8 @@ names(mf)
 
 ```{r}
 # export final dataset for modeling
-s1b_id <-
-  df %>% 
-  filter(study == "1b",
-         condition == "pt") %>% 
-  select(participant)
-  
-df %<>% 
-  filter(study %in% c("1a", "1c") |
-           participant %in% s1b_id$participant) %>% 
-  filter(condition %in% c("control", "pt"))
-
-# export(df, here("data", "df_final.csv"))
+export(df, here("data", "df_final.csv"))
+save.image(here("data", "fet_gen.RData"))
 ```
 
 
