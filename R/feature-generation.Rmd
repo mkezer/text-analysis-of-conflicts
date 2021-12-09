@@ -239,8 +239,8 @@ names(mf)
 
 ```{r}
 # export final dataset for modeling
-export(df, here("data", "df_final.csv"))
-save.image(here("data", "fet_gen.RData"))
+# export(df, here("data", "df_final.csv"))
+# save.image(here("R", "fet_gen.RData"))
 ```
 
 
