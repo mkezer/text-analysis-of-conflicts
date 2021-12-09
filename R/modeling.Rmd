@@ -567,9 +567,17 @@ kable(gmb_eval2,
 
 ## Summary of results
 ```{r}
+eval_table <-
+  bind_rows(ridge_eval, lasso_eval, gbm_eval,
+            ridge_eval2, lasso_eval2, gbm_eval2)
 
-
-
+kable(eval_table,
+      digits = 4) %>% 
+  kable_styling(bootstrap_options = c("striped"),
+                full_width = FALSE) %>% 
+  row_spec(0, background = "gray", color = "white") %>% 
+  pack_rows("Judgment of self", 1, 3) %>% 
+  pack_rows("Judgment of other", 4, 6)
 ```
 
 ```{r}
