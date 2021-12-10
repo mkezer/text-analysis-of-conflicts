@@ -14,9 +14,10 @@ output:
 ```{r include = FALSE}
 knitr::opts_chunk$set(echo = TRUE, 
                       tidy = TRUE, 
-                      cache = FALSE, 
+                      cache = FALSE,
                       warning = FALSE, 
-                      message = FALSE)
+                      message = FALSE,
+                      eval = FALSE)
 ```
 
 ```{r}
@@ -26,6 +27,7 @@ library(rio)
 
 library(tidyverse)
 library(magrittr)
+library(dlookr)
 
 library(quanteda)
 library(quanteda.textstats)
@@ -45,18 +47,42 @@ df <- dir_ls(here("data"), glob = "*.xlsx") %>%
   rename(study = file) %>% 
   select(-gender, -race)
 
+p_t_p <-
 df %>% 
   select(study, p_right:t_right) %>% 
   gather(var, val, -study) %>% 
   ggplot(aes(val)) +
   geom_density() +
   facet_wrap(study ~ var)
+
+d1 <-
+df %>% 
+  select(study:age) %>% 
+  describe()
+
 ```
+
+```{r, eval=TRUE}
+load(here::here("R", "fet_gen2.RData"))
+
+p_t_p
+
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+
+d1 %>% 
+  select(variable: kurtosis) %>% 
+  kable(digits = 3) %>% 
+  kable_styling(bootstrap_options = c("striped", "condensed"),
+                full_width = FALSE) %>% 
+  row_spec(0, background = "gray", color = "white")
+```
+
 
 ## Feature generation {.tabset .tabset-fade}
 ### Textual statistics with quanteda
 ```{r}
-
 # tokenize
 tokenized <- tokens(df$conflict_text,
                     remove_punct = FALSE,
@@ -107,9 +133,24 @@ mor <-
 df <- bind_cols(df, mor[,-1])
 
 # features generated
+d2 <-
 df %>% 
   select(chars:81) %>% 
-  names()
+  describe()
+```
+
+
+```{r, eval=TRUE}
+options(scipen = 10)
+
+d2 %>% 
+  select(variable: kurtosis) %>% 
+  kable(digits = 3) %>% 
+  kable_styling(bootstrap_options = c("striped", "condensed"),
+                full_width = FALSE) %>% 
+  row_spec(0, background = "gray", color = "white") %>% 
+  scroll_box(height = "750px",
+             width = "850px")
 ```
 
 ### Text statistics via udpipe
@@ -200,7 +241,24 @@ names(pos[,-1])
 names(xpos[,-1])
 names(morph_freq[,-1])
 names(synts[,-1])
+
+d3 <- describe(pos[,-1])
+d4 <- describe(xpos[,-1])
+d5 <- describe(morph_freq[,-1])
+d6 <- describe(synts[,-1])
 ```
+
+```{r, eval=TRUE}
+bind_rows(d3, d4, d5, d6) %>% 
+  select(variable: kurtosis) %>% 
+  kable(digits = 3) %>% 
+  kable_styling(bootstrap_options = c("striped", "condensed"),
+                full_width = FALSE) %>% 
+  row_spec(0, background = "gray", color = "white") %>% 
+  scroll_box(height = "750px",
+             width = "850px")
+```
+
 
 ### Natural Language Proccessing
 ```{r}
@@ -209,8 +267,20 @@ embeddings <- import(here("data", "embeddings.csv"))
 df <- bind_cols(df, embeddings)
 
 # features generated
-names(embeddings)
+d7 <- describe(embeddings)
 ```
+
+```{r, eval=TRUE}
+d7 %>% 
+  select(variable: kurtosis) %>% 
+  kable(digits = 3) %>% 
+  kable_styling(bootstrap_options = c("striped", "condensed"),
+                full_width = FALSE) %>% 
+  row_spec(0, background = "gray", color = "white") %>% 
+  scroll_box(height = "750px",
+             width = "850px")
+```
+
 
 ### Linguistic inquiry and word count (LIWC)
 ```{r}
@@ -221,8 +291,20 @@ liwc <- import(here("data", "liwc_df.csv")) %>%
 df <- bind_cols(df, liwc)
 
 # features generated
-names(liwc[,-1:-4])
+d8 <- describe(liwc[,-1:-4])
 ```
+
+```{r, eval=TRUE}
+d8 %>% 
+  select(variable: kurtosis) %>% 
+  kable(digits = 3) %>% 
+  kable_styling(bootstrap_options = c("striped", "condensed"),
+                full_width = FALSE) %>% 
+  row_spec(0, background = "gray", color = "white") %>% 
+  scroll_box(height = "750px",
+             width = "850px")
+```
+
 
 ### Moral foundations dictionary
 ```{r}
@@ -233,7 +315,16 @@ mf <- liwcalike(df$conflict_text,
 df <- bind_cols(df, mf)
 
 # features generated
-names(mf)
+d9 <- describe(mf)
+```
+
+```{r, eval=TRUE}
+d9 %>% 
+  select(variable: kurtosis) %>% 
+  kable(digits = 3) %>% 
+  kable_styling(bootstrap_options = c("striped", "condensed"),
+                full_width = FALSE) %>% 
+  row_spec(0, background = "gray", color = "white")
 ```
 
 
