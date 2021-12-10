@@ -14,7 +14,7 @@ output:
 ```{r include = FALSE}
 knitr::opts_chunk$set(echo = TRUE, 
                       tidy = TRUE, 
-                      cache = TRUE, 
+                      cache = FALSE, 
                       warning = FALSE, 
                       message = FALSE)
 ```
@@ -55,6 +55,8 @@ metrics <- function(observed, predicted, model){
   
   return(table)
 }
+
+load(here("R", "modeling_gbm6.RData"))
 ```
 
 
@@ -268,6 +270,7 @@ gbm1 <- caret::train(blueprint,
                      verbose      = FALSE)
 
 plot(gbm1, type = "l")
+gbm1$bestTune
 
 ## Step 2: Tune the interaction depth and minimum number of observations
 grid6 <- expand.grid(shrinkage         = 0.1,
@@ -313,6 +316,34 @@ kable(gmb_eval,
   kable_styling(bootstrap_options = c("striped"),
                 full_width = FALSE) %>% 
   row_spec(0, background = "gray", color = "white")
+
+vip_gbm <-
+vip(gbm3,
+    num_features = 10,
+    geom = "point") +
+  theme_bw() 
+
+df_te %<>% 
+  mutate(gbm_self = predict_te_gbm1)
+
+gbm_self <-
+df_te %>% 
+  mutate(participant = 1:nrow(df_te)) %>% 
+  select(participant, p_right, gbm_self) %>% 
+  gather(var, val, -participant) %>% 
+  mutate(var = recode(var,
+                      `gbm_self` = "Predicted",
+                      `t_right` = "Observed")
+         ) %>%   
+  ggplot() +
+  geom_point(aes(participant, val, color = var)) +
+  theme_bw() +
+    theme(legend.position = "none") +
+  labs(y = "",
+       x = "Participants",
+       title = "Judgment of the self",
+       color = "") +
+  scale_y_continuous(breaks = 1:7)
 ```
 
 
@@ -410,11 +441,6 @@ ridge6$bestTune
 
 predict_te_ridge4 <- predict(ridge6, df_te)
 
-vip(ridge6, 
-    num_features = 10, 
-    geom = "point") + 
-  theme_bw()
-
 ridge_eval2 <- metrics(df_te$p_right, predict_te_ridge4, "Ridge")
 
 kable(ridge_eval2,
@@ -422,6 +448,35 @@ kable(ridge_eval2,
   kable_styling(bootstrap_options = c("striped"),
                 full_width = FALSE) %>% 
   row_spec(0, background = "gray", color = "white")
+
+vip_ridge <-
+vip(ridge6,
+    num_features = 10,
+    geom = "point") +
+  theme_bw() 
+
+df_te %<>% 
+  mutate(ridge_other = predict_te_ridge4)
+
+ridge_p <-
+df_te %>% 
+  mutate(participant = 1:nrow(df_te)) %>% 
+  select(participant, t_right, ridge_other) %>% 
+  gather(var, val, -participant) %>% 
+  mutate(var = recode(var,
+                      `ridge_other` = "Predicted",
+                      `t_right` = "Observed")
+         ) %>% 
+  ggplot() +
+  geom_point(aes(participant, val, color = var)) +
+  theme_bw() + 
+  theme(legend.position = "none") +
+  labs(y = "",
+       x = "Participants",
+       title = "Judgment of the other",
+       color = "") +
+  scale_y_continuous(breaks = 1:7)
+  
 ```
 
 ### Linear regression with lasso penalty
@@ -462,11 +517,6 @@ plot(lasso2)
 lasso2$bestTune
 
 predict_te_lasso2 <- predict(lasso2, df_te)
-
-vip(lasso2, 
-    num_features = 10, 
-    geom = "point") + 
-  theme_bw()
 
 lasso_eval2 <- metrics(df_te$p_right, predict_te_lasso2, "Lasso")
 
@@ -518,6 +568,7 @@ gbm4 <- caret::train(blueprint2,
                      verbose      = FALSE)
 
 plot(gbm4, type = "l")
+gbm4$bestTune
 
 ## Step 2: Tune the interaction depth and minimum number of observations
 grid13 <- expand.grid(shrinkage         = 0.1,
@@ -535,6 +586,7 @@ gbm5 <- caret::train(blueprint2,
                      verbose = FALSE)
 
 plot(gbm5, type = "l")
+gbm5$bestTune
 
 ## Step 3: Lower the learning rate and increase the number of trees
 grid14 <- expand.grid(shrinkage         = 0.01,
@@ -552,6 +604,7 @@ gbm6 <- caret::train(blueprint2,
                      verbose = FALSE)
 
 plot(gbm6, type = "l")
+gbm6$bestTune
 
 predict_te_gbm2 <- predict(gbm6, df_te)
 
@@ -565,7 +618,8 @@ kable(gmb_eval2,
   row_spec(0, background = "gray", color = "white")
 ```
 
-## Summary of results
+## Summary of results {.tabset .tabset-fade}
+### Table
 ```{r}
 eval_table <-
   bind_rows(ridge_eval, lasso_eval, gbm_eval,
@@ -579,6 +633,44 @@ kable(eval_table,
   pack_rows("Judgment of self", 1, 3) %>% 
   pack_rows("Judgment of other", 4, 6)
 ```
+
+### Plots
+```{r}
+library(ggpubr)
+p1 <-
+ggarrange(vip_gbm, vip_ridge, 
+          ncol = 2, 
+          nrow = 1,
+          labels = c("A", "B"))
+
+p1
+
+ggsave(filename = "fet_imp.png",
+       plot = p1,
+       device = "png",
+       path = here("report"),
+       units = "cm",
+       width = 20,
+       height = 15)
+
+p2 <-
+ggarrange(gbm_self, ridge_p,
+          ncol = 2,
+          nrow = 1, 
+          common.legend = TRUE, 
+          legend = "bottom")
+
+p2
+
+ggsave(filename = "obs_pred.png",
+       plot = p2,
+       device = "png",
+       path = here("report"),
+       units = "cm",
+       width = 20,
+       height = 15)
+```
+
 
 ```{r}
 save.image(here("R", "modeling.RData"))
